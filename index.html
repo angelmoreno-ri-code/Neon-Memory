@@ -1,0 +1,946 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON MEMORY - Arcade</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+        :root {
+            --background: #080817;
+            --panel: #11112a;
+            --cyan: #00f5ff;
+            --pink: #ff35d3;
+            --purple: #8b5cf6;
+            --green: #39ff88;
+            --text: #e9eaff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 30px 15px;
+            font-family: 'Rajdhani', sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(ellipse at top, #202050 0%, transparent 55%),
+                linear-gradient(135deg, #080817, #101027 60%, #080817);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Fondo decorativo */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: .12;
+            background-image:
+                linear-gradient(#00f5ff 1px, transparent 1px),
+                linear-gradient(90deg, #00f5ff 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: linear-gradient(to bottom, black, transparent 85%);
+        }
+
+        .contenedor {
+            width: 100%;
+            max-width: 680px;
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(25px, 5vw, 38px);
+            color: var(--cyan);
+            text-shadow:
+                0 0 8px var(--cyan),
+                0 0 22px #008cff;
+            margin: 10px 0 5px;
+            letter-spacing: 3px;
+        }
+
+        .subtitulo {
+            color: var(--pink);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            letter-spacing: 4px;
+            margin-bottom: 25px;
+        }
+
+        /* Panel de estadísticas */
+        .estadisticas {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: rgba(17, 17, 42, .9);
+            border: 1px solid #37376d;
+            border-radius: 12px;
+            padding: 13px 5px;
+            box-shadow: 0 0 12px #3434a522;
+        }
+
+        .stat small {
+            display: block;
+            color: #aaaaca;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat strong {
+            display: block;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 21px;
+            color: var(--cyan);
+            margin-top: 5px;
+        }
+
+        /* Progreso */
+        .progreso-panel {
+            background: var(--panel);
+            border: 1px solid #37376d;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .progreso-texto {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            margin-bottom: 9px;
+        }
+
+        .progreso-texto span:last-child {
+            color: var(--green);
+        }
+
+        .barra-fondo {
+            height: 10px;
+            background: #292947;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .barra {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--pink));
+            box-shadow: 0 0 12px var(--cyan);
+            transition: width .4s ease;
+        }
+
+        /* Instrucciones */
+        .instrucciones {
+            background: #15152f;
+            border: 1px solid #6542a8;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 22px;
+            color: #c9c9e9;
+            font-size: 17px;
+        }
+
+        .instrucciones b {
+            color: var(--cyan);
+        }
+
+        /* Tablero */
+        .tablero-wrapper {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+            padding: 5px 0 15px;
+        }
+
+        .tablero {
+            display: grid;
+            grid-template-columns: 48px repeat(4, minmax(58px, 88px));
+            gap: 9px;
+            align-items: center;
+        }
+
+        .header-col,
+        .header-row {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            color: var(--pink);
+            text-shadow: 0 0 8px var(--pink);
+        }
+
+        .header-row {
+            text-align: center;
+        }
+
+        /* Cartas */
+        .carta {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            min-width: 0;
+            border: 2px solid #5550a5;
+            border-radius: 12px;
+            background: linear-gradient(145deg, #252554, #13132f);
+            box-shadow: 0 0 10px #7548ff33;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: transform .2s, border-color .2s, box-shadow .2s;
+            overflow: hidden;
+        }
+
+        .carta:hover:not(.destapada):not(.encontrada) {
+            transform: translateY(-4px);
+            border-color: var(--cyan);
+            box-shadow: 0 0 18px #00f5ff88;
+        }
+
+        .reverso {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(20px, 5vw, 32px);
+            color: var(--cyan);
+            text-shadow: 0 0 10px var(--cyan);
+        }
+
+        .carta.destapada {
+            background: linear-gradient(145deg, #25234f, #17172e);
+            border-color: var(--cyan);
+            box-shadow: 0 0 15px #00f5ff88;
+            transform: scale(.96);
+            cursor: default;
+        }
+
+        .carta.encontrada {
+            border-color: var(--green);
+            background: linear-gradient(145deg, #103d3b, #142b35);
+            box-shadow: 0 0 15px #39ff8888;
+            cursor: default;
+            animation: acierto .45s ease;
+        }
+
+        .carta img {
+            width: 65%;
+            height: 65%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 0 5px #00f5ff66);
+        }
+
+        .carta .fallback {
+            font-size: clamp(24px, 6vw, 38px);
+        }
+
+        @keyframes acierto {
+            50% { transform: scale(1.1); }
+        }
+
+        /* Panel de selección */
+        .panel-control {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            width: 155px;
+            padding: 12px;
+            background: #14142e;
+            color: var(--cyan);
+            border: 1px solid var(--cyan);
+            border-radius: 8px;
+            outline: none;
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        input:focus {
+            box-shadow: 0 0 12px #00f5ff77;
+        }
+
+        button {
+            border: none;
+            padding: 12px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #080817;
+            background: var(--cyan);
+            box-shadow: 0 0 12px #00f5ff66;
+            transition: .2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px #00f5ffbb;
+        }
+
+        .btn-reiniciar {
+            color: white;
+            background: linear-gradient(90deg, #913cff, #ff35d3);
+            box-shadow: 0 0 12px #ff35d366;
+        }
+
+        .btn-reiniciar:hover {
+            box-shadow: 0 0 20px #ff35d3aa;
+        }
+
+        /* Mensajes */
+        #mensaje {
+            min-height: 35px;
+            margin-top: 18px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .exito { color: var(--green); }
+        .error { color: #ff607c; }
+        .info { color: var(--cyan); }
+
+        .nota {
+            margin-top: 25px;
+            color: #77779e;
+            font-size: 13px;
+        }
+
+        /* Pantalla de victoria */
+        .victoria {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            background: rgba(5, 5, 20, .94);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .victoria.activa {
+            display: flex;
+        }
+
+        .victoria-contenido {
+            width: 100%;
+            max-width: 420px;
+            background: #15152f;
+            border: 2px solid var(--cyan);
+            border-radius: 20px;
+            padding: 35px 20px;
+            box-shadow: 0 0 35px #00f5ff66;
+            animation: aparecer .5s ease;
+        }
+
+        .victoria h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--green);
+            text-shadow: 0 0 15px var(--green);
+            font-size: 25px;
+        }
+
+        .trofeo {
+            font-size: 65px;
+            margin: 10px;
+        }
+
+        .victoria p {
+            font-size: 18px;
+            color: #c8c8e9;
+        }
+
+        @keyframes aparecer {
+            from { opacity: 0; transform: scale(.7); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 430px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .tablero {
+                grid-template-columns: 38px repeat(4, minmax(52px, 72px));
+                gap: 6px;
+            }
+
+            .estadisticas {
+                gap: 6px;
+            }
+
+            .stat strong {
+                font-size: 17px;
+            }
+
+            .stat small {
+                font-size: 10px;
+            }
+
+            .instrucciones {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="contenedor">
+
+    <h1>NEON MEMORY</h1>
+    <div class="subtitulo">ARCADE PIXEL EDITION</div>
+
+    <!-- Estadísticas -->
+    <div class="estadisticas">
+        <div class="stat">
+            <small>Movimientos</small>
+            <strong id="movimientos">0</strong>
+        </div>
+
+        <div class="stat">
+            <small>Tiempo</small>
+            <strong id="tiempo">00:00</strong>
+        </div>
+
+        <div class="stat">
+            <small>Parejas</small>
+            <strong id="parejas">0/8</strong>
+        </div>
+    </div>
+
+    <!-- Barra de progreso -->
+    <div class="progreso-panel">
+        <div class="progreso-texto">
+            <span>PROGRESO DEL JUEGO</span>
+            <span id="porcentaje">0%</span>
+        </div>
+
+        <div class="barra-fondo">
+            <div class="barra" id="barra"></div>
+        </div>
+    </div>
+
+    <!-- Instrucciones -->
+    <div class="instrucciones">
+        <strong>¿CÓMO JUGAR?</strong><br>
+        Encuentra las 8 parejas utilizando las coordenadas
+        del tablero.<br><br>
+        Ejemplo: <b>2x,3y</b> o <b>2x 3y</b>
+    </div>
+
+    <!-- Tablero -->
+    <div class="tablero-wrapper">
+        <div class="tablero" id="tablero"></div>
+    </div>
+
+    <!-- Controles -->
+    <div class="panel-control">
+        <input
+            type="text"
+            id="inputCoordenada"
+            placeholder="Ej: 1x,2y"
+            maxlength="15"
+            autocomplete="off"
+        >
+
+        <button onclick="procesarInstruccion()">
+            SELECCIONAR
+        </button>
+
+        <button class="btn-reiniciar" onclick="reiniciarJuego()">
+            ↻ REINICIAR
+        </button>
+    </div>
+
+    <div id="mensaje" class="info">
+        ¡Prepárate para encontrar las parejas!
+    </div>
+
+    <div class="nota">
+        NEON MEMORY © 2026 - Hecho por el grupo JDSR
+    </div>
+
+</div>
+
+<!-- Pantalla de victoria -->
+<div class="victoria" id="pantallaVictoria">
+    <div class="victoria-contenido">
+        <div class="trofeo">🏆</div>
+
+        <h2>¡VICTORIA!</h2>
+
+        <p>¡Has encontrado todas las parejas!</p>
+
+        <p id="resultadoFinal"></p>
+
+        <button onclick="reiniciarJuego()">
+            JUGAR DE NUEVO
+        </button>
+    </div>
+</div>
+
+<script>
+    // CONFIGURACIÓN DEL JUEGO
+
+    const filas = 4;
+    const columnas = 4;
+
+    // Imágenes pixeladas de temática videojuegos.
+    // Puedes reemplazar las direcciones por tus propios PNG.
+
+    const simbolos = [
+        {
+            nombre: "Consola",
+            emoji: "🎮",
+            imagen: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3ae.png"
+        },
+        {
+            nombre: "Alien",
+            emoji: "👾",
+            imagen: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f47e.png"
+        },
+        {
+            nombre: "Cohete",
+            emoji: "🚀",
+            imagen: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f680.png"
+        },
+        {
+            nombre: "Diamante",
+            emoji: "💎",
+            imagen: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f48e.png"
+        },
+        {
+            nombre: "Champiñón",
+            emoji: "🍄",
+            imagen: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f344.png"
+        },
+        {
+            nombre: "Fantasma",
+            emoji: "👻",
+            imagen: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f47b.png"
+        },
+        {
+            nombre: "Robot",
+            emoji: "🤖",
+            imagen: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png"
+        },
+        {
+            nombre: "Rayo",
+            emoji: "⚡",
+            imagen: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/26a1.png"
+        }
+    ];
+
+    let matrizCartas = [];
+    let estadoVisibles = [];
+    let estadoEncontradas = [];
+
+    let primeraSeleccion = null;
+    let parejasEncontradas = 0;
+    let movimientos = 0;
+
+    let bloqueado = false;
+    let tiempo = 0;
+    let intervalo = null;
+    let juegoIniciado = false;
+    let juegoTerminado = false;
+
+    // INICIAR JUEGO
+
+    function inicializarJuego() {
+
+        let cartas = [...simbolos, ...simbolos];
+
+        // Mezclar cartas
+        for (let i = cartas.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [cartas[i], cartas[j]] = [cartas[j], cartas[i]];
+        }
+
+        matrizCartas = [];
+        estadoVisibles = [];
+        estadoEncontradas = [];
+
+        for (let i = 0; i < filas; i++) {
+
+            matrizCartas.push(
+                cartas.slice(i * columnas, (i + 1) * columnas)
+            );
+
+            estadoVisibles.push(
+                Array(columnas).fill(false)
+            );
+
+            estadoEncontradas.push(
+                Array(columnas).fill(false)
+            );
+        }
+
+        renderizarTablero();
+        actualizarEstadisticas();
+    }
+
+    // DIBUJAR TABLERO
+
+    function renderizarTablero() {
+
+        const contenedor = document.getElementById("tablero");
+        contenedor.innerHTML = "";
+
+        // Encabezados de columnas Y
+        contenedor.appendChild(document.createElement("div"));
+
+        for (let y = 1; y <= columnas; y++) {
+
+            const header = document.createElement("div");
+
+            header.className = "header-col";
+            header.innerText = `${y}y`;
+
+            contenedor.appendChild(header);
+        }
+
+        // Filas X
+        for (let x = 0; x < filas; x++) {
+
+            const headerRow = document.createElement("div");
+
+            headerRow.className = "header-row";
+            headerRow.innerText = `${x + 1}x`;
+
+            contenedor.appendChild(headerRow);
+
+            for (let y = 0; y < columnas; y++) {
+
+                const celda = document.createElement("div");
+
+                celda.className = "carta";
+                celda.id = `carta-${x}-${y}`;
+
+                if (estadoEncontradas[x][y]) {
+
+                    celda.classList.add("destapada", "encontrada");
+
+                    mostrarImagen(celda, matrizCartas[x][y]);
+
+                } else if (estadoVisibles[x][y]) {
+
+                    celda.classList.add("destapada");
+
+                    mostrarImagen(celda, matrizCartas[x][y]);
+
+                } else {
+
+                    const reverso = document.createElement("span");
+
+                    reverso.className = "reverso";
+                    reverso.innerText = "✦";
+
+                    celda.appendChild(reverso);
+                }
+
+                contenedor.appendChild(celda);
+            }
+        }
+    }
+
+    // MOSTRAR IMAGEN DE LA CARTA
+
+    function mostrarImagen(celda, carta) {
+
+        const img = document.createElement("img");
+
+        img.src = carta.imagen;
+        img.alt = carta.nombre;
+        img.draggable = false;
+
+        // Si falla la imagen, mostrar el emoji alternativo.
+        img.onerror = function () {
+
+            const fallback = document.createElement("span");
+
+            fallback.className = "fallback";
+            fallback.innerText = carta.emoji;
+
+            this.replaceWith(fallback);
+        };
+
+        celda.appendChild(img);
+    }
+
+    // PROCESAR COORDENADAS
+
+    function procesarInstruccion() {
+
+        if (bloqueado || juegoTerminado) return;
+
+        const input = document.getElementById("inputCoordenada");
+        const texto = input.value.trim();
+
+        const patron = /^\s*(\d+)\s*[xX]\s*[, ]?\s*(\d+)\s*[yY]\s*$/;
+        const coincidencia = texto.match(patron);
+
+        if (!coincidencia) {
+
+            mostrarMensaje(
+                '❌ Formato incorrecto. Usa "2x,3y".',
+                "error"
+            );
+
+            return;
+        }
+
+        const x = parseInt(coincidencia[1]) - 1;
+        const y = parseInt(coincidencia[2]) - 1;
+
+        if (
+            x < 0 || x >= filas ||
+            y < 0 || y >= columnas
+        ) {
+
+            mostrarMensaje(
+                "⚠️ Coordenadas fuera de rango (1 a 4).",
+                "error"
+            );
+
+            return;
+        }
+
+        if (estadoVisibles[x][y] || estadoEncontradas[x][y]) {
+
+            mostrarMensaje(
+                "⚠️ Esa carta ya está descubierta.",
+                "error"
+            );
+
+            return;
+        }
+
+        // Iniciar cronómetro en el primer movimiento
+        if (!juegoIniciado) {
+            iniciarCronometro();
+            juegoIniciado = true;
+        }
+
+        estadoVisibles[x][y] = true;
+
+        renderizarTablero();
+
+        input.value = "";
+        input.focus();
+
+        if (primeraSeleccion === null) {
+
+            primeraSeleccion = { x, y };
+
+            mostrarMensaje(
+                "✨ ¡Primera carta descubierta! Elige otra.",
+                "info"
+            );
+
+        } else {
+
+            const x1 = primeraSeleccion.x;
+            const y1 = primeraSeleccion.y;
+
+            movimientos++;
+
+            // COMPARAR PAREJAS
+
+            if (
+                matrizCartas[x1][y1].nombre ===
+                matrizCartas[x][y].nombre
+            ) {
+
+                estadoEncontradas[x1][y1] = true;
+                estadoEncontradas[x][y] = true;
+
+                parejasEncontradas++;
+
+                primeraSeleccion = null;
+
+                mostrarMensaje(
+                    "🎉 ¡Excelente! Encontraste una pareja.",
+                    "exito"
+                );
+
+                actualizarEstadisticas();
+                renderizarTablero();
+
+                // COMPROBAR VICTORIA
+
+                if (parejasEncontradas === 8) {
+                    finalizarJuego();
+                }
+
+            } else {
+
+                bloqueado = true;
+
+                mostrarMensaje(
+                    "❌ No coinciden. ¡Inténtalo nuevamente!",
+                    "error"
+                );
+
+                actualizarEstadisticas();
+
+                setTimeout(() => {
+
+                    estadoVisibles[x1][y1] = false;
+                    estadoVisibles[x][y] = false;
+
+                    primeraSeleccion = null;
+                    bloqueado = false;
+
+                    renderizarTablero();
+
+                    mostrarMensaje(
+                        "¡Sigue buscando las parejas!",
+                        "info"
+                    );
+
+                }, 1200);
+            }
+        }
+
+        actualizarEstadisticas();
+    }
+
+    // ACTUALIZAR ESTADÍSTICAS
+
+    function actualizarEstadisticas() {
+
+        document.getElementById("movimientos").innerText =
+            movimientos;
+
+        document.getElementById("parejas").innerText =
+            `${parejasEncontradas}/8`;
+
+        const porcentaje = (parejasEncontradas / 8) * 100;
+
+        document.getElementById("porcentaje").innerText =
+            `${porcentaje}%`;
+
+        document.getElementById("barra").style.width =
+            `${porcentaje}%`;
+    }
+
+    // CRONÓMETRO
+
+    function iniciarCronometro() {
+
+        clearInterval(intervalo);
+
+        intervalo = setInterval(() => {
+
+            tiempo++;
+
+            const minutos = Math.floor(tiempo / 60);
+            const segundos = tiempo % 60;
+
+            document.getElementById("tiempo").innerText =
+                `${String(minutos).padStart(2, "0")}:${String(segundos).padStart(2, "0")}`;
+
+        }, 1000);
+    }
+
+    // FINALIZAR JUEGO
+
+    function finalizarJuego() {
+
+        juegoTerminado = true;
+
+        clearInterval(intervalo);
+
+        document.getElementById("resultadoFinal").innerText =
+            `Movimientos: ${movimientos} | Tiempo: ${document.getElementById("tiempo").innerText}`;
+
+        document.getElementById("pantallaVictoria")
+            .classList.add("activa");
+
+        mostrarMensaje(
+            "🏆 ¡Has completado el juego!",
+            "exito"
+        );
+    }
+
+    // MOSTRAR MENSAJES
+
+    function mostrarMensaje(msg, tipo) {
+
+        const mensajeDiv = document.getElementById("mensaje");
+
+        mensajeDiv.innerText = msg;
+        mensajeDiv.className = tipo;
+    }
+
+    // REINICIAR JUEGO
+
+    function reiniciarJuego() {
+
+        clearInterval(intervalo);
+
+        primeraSeleccion = null;
+        parejasEncontradas = 0;
+        movimientos = 0;
+
+        tiempo = 0;
+
+        bloqueado = false;
+        juegoIniciado = false;
+        juegoTerminado = false;
+
+        document.getElementById("tiempo").innerText = "00:00";
+
+        document.getElementById("inputCoordenada").value = "";
+
+        document.getElementById("pantallaVictoria")
+            .classList.remove("activa");
+
+        mostrarMensaje(
+            "¡Nueva partida! Encuentra las 8 parejas.",
+            "info"
+        );
+
+        inicializarJuego();
+    }
+
+    // ENTER PARA SELECCIONAR
+
+    document.getElementById("inputCoordenada")
+        .addEventListener("keydown", function(e) {
+
+            if (e.key === "Enter") {
+                procesarInstruccion();
+            }
+        });
+
+    // INICIAR AL CARGAR LA PÁGINA
+
+    inicializarJuego();
+
+</script>
+
+</body>
+</html>
